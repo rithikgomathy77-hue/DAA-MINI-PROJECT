@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Stock Price Analysis</title>
+
+<style>
+/* ===== GLOBAL STYLES ===== */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    margin: 0;
+    color: white;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    padding: 20px;
+}
+
+/* ===== HEADER ===== */
+header {
+    text-align: center;
+    padding: 20px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+}
+
+/* ===== INPUT SECTION ===== */
+.input-section {
+    background: white;
+    color: black;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.input-section input {
+    width: 60%;
+    padding: 10px;
+    margin: 10px;
+}
+
+.input-section button {
+    padding: 10px 20px;
+    border: none;
+    background: #1e3c72;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.input-section button:hover {
+    background: #2a5298;
+}
+
+/* ===== TABLE ===== */
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: white;
+    color: black;
+}
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+th {
+    background: #2a5298;
+    color: white;
+}
+
+/* ===== RESULT BOX ===== */
+.result-box {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.card {
+    background: white;
+    color: black;
+    padding: 20px;
+    border-radius: 10px;
+    width: 30%;
+    text-align: center;
+    box-shadow: 0 0 10px gray;
+}
+
+/* ===== CHART ===== */
+canvas {
+    margin-top: 20px;
+    background: white;
+    border-radius: 10px;
+}
+
+/* ===== BUTTON GROUP ===== */
+.actions {
+    margin-top: 15px;
+}
+
+.actions button {
+    margin-right: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <h1>📈 Stock Price Analysis System</h1>
+</header>
+
+<div class="input-section">
+    <input type="text" id="priceInput" placeholder="Enter prices (e.g., 120,150,90,200)">
+    <br>
+
+    <div class="actions">
+        <button onclick="addData()">Add Data</button>
+        <button onclick="analyze()">Analyze</button>
+        <button onclick="sortData()">Sort</button>
+        <button onclick="clearData()">Clear</button>
+    </div>
+</div>
+
+<!-- TABLE -->
+<table id="dataTable">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- RESULT -->
+<div class="result-box">
+    <div class="card">
+        <h3>Maximum</h3>
+        <p id="maxVal">-</p>
+    </div>
+    <div class="card">
+        <h3>Minimum</h3>
+        <p id="minVal">-</p>
+    </div>
+    <div class="card">
+        <h3>Average</h3>
+        <p id="avgVal">-</p>
+    </div>
+</div>
+
+<!-- CHART -->
+<canvas id="chart" width="800" height="300"></canvas>
+
+</div>
+
+<script>
+let prices = [];
+
+/* ===== ADD DATA ===== */
+function addData() {
+    let input = document.getElementById("priceInput").value;
+    let arr = input.split(",").map(Number);
+
+    if (arr.includes(NaN)) {
+        alert("Invalid input!");
+        return;
+    }
+
+    prices = prices.concat(arr);
+    displayTable();
+    saveData();
+}
+
+/* ===== DISPLAY TABLE ===== */
+function displayTable() {
+    let tbody = document.querySelector("#dataTable tbody");
+    tbody.innerHTML = "";
+
+    prices.forEach((price, index) => {
+        let row = `<tr>
+            <td>${index + 1}</td>
+            <td>${price}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+    });
+}
+
+/* ===== ANALYZE ===== */
+function analyze() {
+    if (prices.length === 0) return;
+
+    let max = Math.max(...prices);
+    let min = Math.min(...prices);
+    let avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+
+    document.getElementById("maxVal").innerText = max;
+    document.getElementById("minVal").innerText = min;
+    document.getElementById("avgVal").innerText = avg.toFixed(2);
+
+    drawChart();
+}
+
+/* ===== SORT ===== */
+function sortData() {
+    prices.sort((a, b) => a - b);
+    displayTable();
+}
+
+/* ===== CLEAR ===== */
+function clearData() {
+    prices = [];
+    displayTable();
+    localStorage.clear();
+}
+
+/* ===== SAVE DATA ===== */
+function saveData() {
+    localStorage.setItem("stockData", JSON.stringify(prices));
+}
+
+/* ===== LOAD DATA ===== */
+function loadData() {
+    let saved = localStorage.getItem("stockData");
+    if (saved) {
+        prices = JSON.parse(saved);
+        displayTable();
+    }
+}
+
+/* ===== DRAW CHART ===== */
+function drawChart() {
+    let canvas = document.getElementById("chart");
+    let ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let max = Math.max(...prices);
+    let barWidth = 30;
+    let gap = 10;
+
+    prices.forEach((value, index) => {
+        let height = (value / max) * 200;
+
+        ctx.fillStyle = "blue";
+        ctx.fillRect(index * (barWidth + gap), 250 - height, barWidth, height);
+
+        ctx.fillStyle = "black";
+        ctx.fillText(value, index * (barWidth + gap), 260);
+    });
+}
+
+/* ===== INIT ===== */
+loadData();
+</script>
+
+</body>
+</html>
